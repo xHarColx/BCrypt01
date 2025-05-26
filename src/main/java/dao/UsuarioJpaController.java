@@ -19,7 +19,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import util.DESCipher;
 import util.MD5;
-import util.PasswordUtil;
+
 
 /**
  *

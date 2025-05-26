@@ -18,7 +18,6 @@ import javax.servlet.http.HttpSession;
 import util.DESCipher;
 import util.JwtUtil;
 import util.MD5;
-import util.PasswordUtil;
 
 @WebServlet(name = "LoginUser", urlPatterns = {"/login-normal"})
 public class LoginUser extends HttpServlet {
@@ -48,7 +47,7 @@ public class LoginUser extends HttpServlet {
             System.out.println("Contraseña MD5: " + resultado);
             System.out.println("-----------------------------------------");
             UsuarioJpaController ujc = new UsuarioJpaController();
-            Usuario usuario = ujc.validarUsuario(new Usuario(log, passCifrada)); // Debes implementar este método
+            Usuario usuario = ujc.validarUsuario(new Usuario(log, resultado)); // Debes implementar este método
             // VALIDACIÓN CON BCRYPT
             if (usuario != null) {
                 HttpSession session = request.getSession();
