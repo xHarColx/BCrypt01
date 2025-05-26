@@ -13,8 +13,13 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Query;
 import javax.persistence.EntityNotFoundException;
+import javax.persistence.NoResultException;
+import javax.persistence.Persistence;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
+import util.DESCipher;
+import util.MD5;
+import util.PasswordUtil;
 
 /**
  *
@@ -25,10 +30,13 @@ public class UsuarioJpaController implements Serializable {
     public UsuarioJpaController(EntityManagerFactory emf) {
         this.emf = emf;
     }
-    private EntityManagerFactory emf = null;
+    private EntityManagerFactory emf = Persistence.createEntityManagerFactory("com.mycompany_BCrypt01_war_1.0-SNAPSHOTPU");
 
     public EntityManager getEntityManager() {
         return emf.createEntityManager();
+    }
+
+    public UsuarioJpaController() {
     }
 
     public void create(Usuario usuario) throws PreexistingEntityException, Exception {
@@ -139,5 +147,74 @@ public class UsuarioJpaController implements Serializable {
             em.close();
         }
     }
-    
+
+    public Usuario validarUsuario(Usuario usuario) {
+        EntityManager em = getEntityManager();
+        try {
+            Query query = em.createNamedQuery("Usuario.validar");
+            query.setParameter("logiUsua", usuario.getLogiUsua());
+            query.setParameter("passUsua", usuario.getPassUsua());
+            return (Usuario) query.getSingleResult();
+        } catch (Exception e) {
+            System.out.println("Error: " + e);
+            return null;
+        } finally {
+            em.close();
+        }
+    }
+
+    public String cambiarClave(Usuario u, String nuevaClave) {
+        EntityManager em = getEntityManager();
+        try {
+            Usuario usuario = validarUsuario(u);
+            if (usuario != null) { // Verifica que el usuario exista
+                if (usuario.getPassUsua().equals(u.getPassUsua())) {
+                    usuario.setPassUsua(nuevaClave);
+                    edit(usuario);
+                    return "Clave cambiada";
+                } else {
+                    return "Clave actual no válida";
+                }
+            } else {
+                return "Usuario no encontrado"; // Manejo de usuario no encontrado
+            }
+        } catch (Exception ex) {
+            return null;
+        } finally {
+            em.close();
+        }
+    }
+
+
+
+    public static void main(String[] args) throws Exception {
+        UsuarioJpaController ujc = new UsuarioJpaController();
+
+        // Clave maestra para DES (debe tener exactamente 8 caracteres)
+        String claveDES = "12345678";
+
+        // Contraseña ingresada
+        String inputPassword = "1234";
+
+        // Cifrar la contraseña ingresada (opcional)
+        String passCifrada = DESCipher.cifrar(inputPassword, claveDES);
+        System.out.println("Contraseña cifrada con DES: " + passCifrada);
+        System.out.println("-----------------------------------------");
+        String passDescifrada = DESCipher.descifrar(passCifrada, claveDES);
+        System.out.println("Contraseña descifrada con DES: " + passDescifrada);
+        System.out.println("-----------------------------------------");
+        String resultado = MD5.getMD5(passDescifrada);
+        System.out.println("Contraseña MD5: " + resultado);
+        System.out.println("-----------------------------------------");
+        // Supongamos que el hash BCrypt está guardado en la base de datos para el usuario "kike"
+        Usuario usuario; // usar en producción: passCifrada si se guarda cifrada
+        usuario = ujc.validarUsuario(new Usuario("test", "81dc9bdb52d04dc20036dbd8313ed055"));
+
+        if (usuario != null) {
+            System.out.println("Existe");
+        } else {
+            System.out.println("No existe");
+        }
+    }
+
 }
